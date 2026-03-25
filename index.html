@@ -110,12 +110,16 @@
 <body>
 <!-- 导航栏 -->
 <div style="position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; gap: 10px;">
-  <a href="/" style="background: #333; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Game</a>
-  <a id="userBtn" href="#" onclick="toggleUserMenu(event)" style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Sign in</a>
-</div>
-<div id="userMenu" style="position: fixed; top: 60px; right: 20px; background: #1a1a2e; border: 1px solid #333; border-radius: 5px; display: none; z-index: 998; min-width: 150px;">
-  <a href="/user-center.html" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333;">👤 个人中心</a>
-  <a href="#" onclick="logout(event)" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none;">🚪 退出登录</a>
+  <!-- 未登录：直接跳转 Google OAuth -->
+  <a id="signInBtn" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile" style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: none;">Sign in with Google</a>
+  <!-- 已登录：显示用户名，点击弹出下拉菜单 -->
+  <div id="userWidget" style="display: none; position: relative;">
+    <button id="userBtn" onclick="toggleUserMenu(event)" style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 14px;"></button>
+    <div id="userMenu" style="position: absolute; top: 45px; right: 0; background: #1a1a2e; border: 1px solid #444; border-radius: 6px; display: none; min-width: 160px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+      <a href="/user-center.html" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333;">👤 个人中心</a>
+      <a href="#" onclick="logout(event)" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none;">🚪 退出登录</a>
+    </div>
+  </div>
 </div>
 <div class="game-container">
   <!-- Left Panel -->
@@ -427,6 +431,14 @@ function toggleUserMenu(e) {
   menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 }
 
+// 点击其他地方关闭菜单
+document.addEventListener('click', (e) => {
+  const widget = document.getElementById('userWidget');
+  if (widget && !widget.contains(e.target)) {
+    document.getElementById('userMenu').style.display = 'none';
+  }
+});
+
 function logout(e) {
   e.preventDefault();
   localStorage.removeItem('user');
@@ -435,14 +447,25 @@ function logout(e) {
 
 // 检查登录状态
 window.addEventListener('load', () => {
-  const user = localStorage.getItem('user');
+  const userStr = localStorage.getItem('user');
+  const signInBtn = document.getElementById('signInBtn');
+  const userWidget = document.getElementById('userWidget');
   const userBtn = document.getElementById('userBtn');
-  if (user) {
-    userBtn.textContent = '👤 ' + JSON.parse(user).name;
-    userBtn.href = '#';
+
+  if (userStr) {
+    // 已登录：显示用户名和下拉菜单
+    try {
+      const user = JSON.parse(userStr);
+      userBtn.textContent = '👤 ' + (user.name || user.email || 'User');
+    } catch(e) {
+      userBtn.textContent = '👤 User';
+    }
+    signInBtn.style.display = 'none';
+    userWidget.style.display = 'block';
   } else {
-    userBtn.href = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile';
-    userBtn.textContent = 'Sign in';
+    // 未登录：显示 Sign in 按钮
+    signInBtn.style.display = 'block';
+    userWidget.style.display = 'none';
   }
 });
 </script>
