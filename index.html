@@ -108,12 +108,14 @@
 </style>
 </head>
 <body>
-<!-- 登录按钮 -->
-<div style="position: fixed; top: 20px; right: 20px; z-index: 999;">
-  <a href="https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile" 
-     style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
-     Sign in with Google
-  </a>
+<!-- 导航栏 -->
+<div style="position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; gap: 10px;">
+  <a href="/" style="background: #333; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Game</a>
+  <a id="userBtn" href="#" onclick="toggleUserMenu(event)" style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Sign in</a>
+</div>
+<div id="userMenu" style="position: fixed; top: 60px; right: 20px; background: #1a1a2e; border: 1px solid #333; border-radius: 5px; display: none; z-index: 998; min-width: 150px;">
+  <a href="/user-center.html" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333;">👤 个人中心</a>
+  <a href="#" onclick="logout(event)" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none;">🚪 退出登录</a>
 </div>
 <div class="game-container">
   <!-- Left Panel -->
@@ -417,6 +419,32 @@ ctx.fillStyle = '#0f0f1a';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 nctx.fillStyle = '#0f0f1a';
 nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+
+// 用户菜单
+function toggleUserMenu(e) {
+  e.preventDefault();
+  const menu = document.getElementById('userMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function logout(e) {
+  e.preventDefault();
+  localStorage.removeItem('user');
+  location.reload();
+}
+
+// 检查登录状态
+window.addEventListener('load', () => {
+  const user = localStorage.getItem('user');
+  const userBtn = document.getElementById('userBtn');
+  if (user) {
+    userBtn.textContent = '👤 ' + JSON.parse(user).name;
+    userBtn.href = '#';
+  } else {
+    userBtn.href = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile';
+    userBtn.textContent = 'Sign in';
+  }
+});
 </script>
 </body>
 </html>
