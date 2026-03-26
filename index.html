@@ -257,7 +257,7 @@
     position: relative;
   }
 </style>
-<script src="https://www.paypal.com/sdk/js?client-id=AeL7MGKo_rFONJdei7JhLNs7gJ_l2rP2PNdXuVaNU4umb_xDLHPLbW_ok0dc6DYkoNOAgKDHpQ8bL2yo&currency=USD&intent=capture&environment=sandbox"></script>
+<script src="https://www.sandbox.paypal.com/sdk/js?client-id=AeL7MGKo_rFONJdei7JhLNs7gJ_l2rP2PNdXuVaNU4umb_xDLHPLbW_ok0dc6DYkoNOAgKDHpQ8bL2yo&currency=USD&intent=capture"></script>
 </head>
 <body>
 <!-- 顶部导航栏 -->
@@ -724,11 +724,34 @@ let paypalRendered = false;
 
 function renderPayPalButton() {
   if (paypalRendered) return;
+
+  const container = document.getElementById('paypal-button-container');
+  const status = document.getElementById('payment-status');
+
   if (typeof paypal === 'undefined') {
-    document.getElementById('payment-status').textContent = '支付组件加载失败，请刷新重试';
+    status.textContent = '支付组件加载中，请稍候...';
+    // 延迟1秒重试，最多重试5次
+    let retries = 0;
+    const retry = setInterval(() => {
+      retries++;
+      if (typeof paypal !== 'undefined') {
+        clearInterval(retry);
+        status.textContent = '';
+        doRenderPayPal(container);
+      } else if (retries >= 5) {
+        clearInterval(retry);
+        status.textContent = '支付组件加载失败，请刷新页面重试';
+      }
+    }, 1000);
     return;
   }
+  doRenderPayPal(container);
+}
+
+function doRenderPayPal(container) {
+  if (paypalRendered) return;
   paypalRendered = true;
+  container.innerHTML = '';
   paypal.Buttons({
     style: {
       layout: 'vertical',
@@ -762,7 +785,7 @@ function renderPayPalButton() {
     onCancel: function() {
       document.getElementById('payment-status').textContent = '已取消支付';
     }
-  }).render('#paypal-button-container');
+  }).render(container);
 }
 
 function formatPlayTime(seconds) {
