@@ -131,6 +131,41 @@
   }
   .profile-info { font-size: 13px; line-height: 1.8; color: #aaa; }
   .profile-info strong { color: #fff; }
+  /* 支付弹窗 */
+  .payment-box {
+    text-align: center;
+    padding: 30px 20px;
+  }
+  .payment-title {
+    font-size: 20px;
+    color: #e94560;
+    margin-bottom: 10px;
+  }
+  .payment-desc {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+  .payment-price {
+    font-size: 36px;
+    color: #00d4ff;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  .payment-btn {
+    background: #e94560;
+    color: #fff;
+    border: none;
+    padding: 12px 40px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .payment-btn:hover {
+    background: #c73652;
+    transform: translateY(-2px);
+  }
   .game-container {
     display: flex;
     gap: 20px;
@@ -308,7 +343,33 @@
         <div class="profile-info">
           <div><strong>最高分：</strong><span id="profileScore">0</span></div>
           <div><strong>游戏次数：</strong><span id="profileGames">0</span></div>
+          <div><strong>游戏时长：</strong><span id="profileTime">0分钟</span></div>
         </div>
+      </div>
+      <div class="profile-section">
+        <h3>购买状态</h3>
+        <div class="profile-info">
+          <div id="profilePaid">🔒 免费试玩版</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 支付弹窗 -->
+<div id="paymentModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">解锁完整版</div>
+      <button class="close-btn" onclick="closePayment()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="payment-box">
+        <div class="payment-title">继续畅玩</div>
+        <div class="payment-desc">免费试玩时间已到，解锁完整版继续游戏</div>
+        <div class="payment-price">¥2.99</div>
+        <div class="payment-desc" style="margin-bottom: 30px;">一次性买断 · 永久畅玩</div>
+        <button class="payment-btn" onclick="processPurchase()">立即购买</button>
       </div>
     </div>
   </div>
@@ -513,13 +574,43 @@ function startGame() {
   document.getElementById('startBtn').textContent = 'RESTART';
   clearInterval(gameLoop);
   gameLoop = setInterval(() => { tick(); }, getSpeed());
+  
+  // 开始计时
+  sessionSeconds = 0;
+  clearInterval(playTimer);
+  playTimer = setInterval(() => {
+    sessionSeconds++;
+    playTimeSeconds++;
+    localStorage.setItem('totalPlayTime', playTimeSeconds);
+    
+    // 检查是否需要支付（5分钟且未购买）
+    if (sessionSeconds >= FREE_PLAY_SECONDS && localStorage.getItem('gamePaid') !== 'true') {
+      pausedForPayment = true;
+      clearInterval(gameLoop);
+      clearInterval(playTimer);
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<div>试玩时间已到</div><div class="sub">请购买完整版继续游戏</div>';
+      document.getElementById('paymentModal').classList.add('show');
+    }
+  }, 1000);
+  
+  // 统计游戏次数
+  const totalGames = parseInt(localStorage.getItem('totalGames') || '0') + 1;
+  localStorage.setItem('totalGames', totalGames);
 }
 
 function endGame() {
   gameOver = true;
   clearInterval(gameLoop);
+  clearInterval(playTimer);
   overlay.style.display = 'flex';
   overlay.innerHTML = `<div>GAME OVER</div><div class="sub">Score: ${score} &nbsp;|&nbsp; Press START</div>`;
+  
+  // 更新最高分
+  const bestScore = parseInt(localStorage.getItem('bestScore') || '0');
+  if (score > bestScore) {
+    localStorage.setItem('bestScore', score);
+  }
 }
 
 function togglePause() {
@@ -589,6 +680,11 @@ function openProfile(e) {
       document.getElementById('profileEmail').textContent = user.email || '-';
     } catch(e) {}
   }
+  // 更新游戏数据
+  document.getElementById('profileScore').textContent = localStorage.getItem('bestScore') || '0';
+  document.getElementById('profileGames').textContent = localStorage.getItem('totalGames') || '0';
+  document.getElementById('profileTime').textContent = formatPlayTime(parseInt(localStorage.getItem('totalPlayTime') || '0'));
+  document.getElementById('profilePaid').textContent = localStorage.getItem('gamePaid') === 'true' ? '✅ 已购买完整版' : '🔒 免费试玩版';
   modal.classList.add('show');
   document.getElementById('userMenu').classList.remove('show');
 }
@@ -596,6 +692,37 @@ function openProfile(e) {
 function closeProfile() {
   document.getElementById('profileModal').classList.remove('show');
 }
+
+function closePayment() {
+  document.getElementById('paymentModal').classList.remove('show');
+}
+
+function processPurchase() {
+  // 模拟支付流程
+  alert('正在跳转支付...\n（实际项目请接入支付宝/微信/Stripe 等支付接口）');
+  // 支付成功后标记已购买
+  localStorage.setItem('gamePaid', 'true');
+  document.getElementById('paymentModal').classList.remove('show');
+  if (pausedForPayment) {
+    pausedForPayment = false;
+    overlay.style.display = 'none';
+    gameLoop = setInterval(() => { tick(); }, getSpeed());
+  }
+}
+
+function formatPlayTime(seconds) {
+  if (seconds < 60) return seconds + '秒';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m + '分' + (s > 0 ? s + '秒' : '');
+}
+
+// 支付相关变量
+const FREE_PLAY_SECONDS = 5 * 60; // 免费试玩5分钟
+let playTimeSeconds = parseInt(localStorage.getItem('totalPlayTime') || '0');
+let sessionSeconds = 0;
+let playTimer = null;
+let pausedForPayment = false;
 
 // 点击弹窗外部关闭
 document.addEventListener('click', (e) => {
