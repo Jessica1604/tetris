@@ -73,6 +73,64 @@
     justify-content: center;
     align-items: center;
   }
+  /* 个人中心弹窗 */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: #1a1a2e;
+    border: 2px solid #0f3460;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .modal-header {
+    padding: 20px;
+    border-bottom: 2px solid #0f3460;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-title { font-size: 18px; color: #e94560; }
+  .close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+  }
+  .close-btn:hover { color: #fff; }
+  .modal-body { padding: 20px; }
+  .profile-section {
+    background: #0f0f1a;
+    border: 2px solid #0f3460;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  .profile-section h3 {
+    color: #e94560;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .profile-info { font-size: 13px; line-height: 1.8; color: #aaa; }
+  .profile-info strong { color: #fff; }
   .game-container {
     display: flex;
     gap: 20px;
@@ -176,7 +234,7 @@
       <span class="user-name" id="userBtn">游客</span>
       <span>▼</span>
       <div class="dropdown" id="userMenu">
-        <div class="dropdown-item" onclick="window.location.href='tetris-user-center.html'">👤 个人中心</div>
+        <div class="dropdown-item" onclick="openProfile(event)">👤 个人中心</div>
         <div class="dropdown-item" onclick="logout(event)">🚪 退出登录</div>
       </div>
     </div>
@@ -228,6 +286,32 @@
     </div>
   </div>
 </div>
+</div>
+
+<!-- 个人中心弹窗 -->
+<div id="profileModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">个人中心</div>
+      <button class="close-btn" onclick="closeProfile()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-section">
+        <h3>基本信息</h3>
+        <div class="profile-info">
+          <div><strong>姓名：</strong><span id="profileName">-</span></div>
+          <div><strong>邮箱：</strong><span id="profileEmail">-</span></div>
+        </div>
+      </div>
+      <div class="profile-section">
+        <h3>游戏数据</h3>
+        <div class="profile-info">
+          <div><strong>最高分：</strong><span id="profileScore">0</span></div>
+          <div><strong>游戏次数：</strong><span id="profileGames">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -494,8 +578,30 @@ function toggleUserMenu(e) {
   menu.classList.toggle('show');
 }
 
-// 点击其他地方关闭菜单
+function openProfile(e) {
+  e.stopPropagation();
+  const modal = document.getElementById('profileModal');
+  const userStr = localStorage.getItem('user') || localStorage.getItem('userInfo');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      document.getElementById('profileName').textContent = user.name || '-';
+      document.getElementById('profileEmail').textContent = user.email || '-';
+    } catch(e) {}
+  }
+  modal.classList.add('show');
+  document.getElementById('userMenu').classList.remove('show');
+}
+
+function closeProfile() {
+  document.getElementById('profileModal').classList.remove('show');
+}
+
+// 点击弹窗外部关闭
 document.addEventListener('click', (e) => {
+  const modal = document.getElementById('profileModal');
+  if (e.target === modal) closeProfile();
+  
   const widget = document.getElementById('userWidget');
   if (widget && !widget.contains(e.target)) {
     document.getElementById('userMenu').classList.remove('show');
