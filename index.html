@@ -170,7 +170,7 @@
 <div class="header">
   <div class="logo">TETRIS</div>
   <div style="display: flex; gap: 10px; align-items: center;">
-    <a id="signInBtn" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile" style="background: #4285f4; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: none; font-size: 13px;">Sign in with Google</a>
+    <a id="signInBtn" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=token&scope=email%20profile" style="background: #4285f4; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: none; font-size: 13px;">Sign in with Google</a>
     <div class="user-menu" id="userWidget" onclick="toggleUserMenu(event)" style="display: none;">
       <div class="user-avatar">👾</div>
       <span class="user-name" id="userBtn">游客</span>
@@ -512,25 +512,54 @@ function logout(e) {
 
 // 检查登录状态（兼容 'user' 和 'userInfo' 两种存储 key）
 window.addEventListener('load', () => {
+  // 处理 Google OAuth 隐式流程回调（token 在 URL hash 中）
+  const hash = window.location.hash;
+  if (hash && hash.includes('access_token')) {
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+      fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      })
+      .then(res => res.json())
+      .then(userInfo => {
+        localStorage.setItem('user', JSON.stringify(userInfo));
+        // 清除 URL hash，避免 token 暴露
+        window.history.replaceState(null, '', window.location.pathname);
+        showUserWidget(userInfo);
+      })
+      .catch(err => console.error('获取用户信息失败:', err));
+      return;
+    }
+  }
+
+  // 正常检查 localStorage
   const userStr = localStorage.getItem('user') || localStorage.getItem('userInfo');
   const signInBtn = document.getElementById('signInBtn');
   const userWidget = document.getElementById('userWidget');
-  const userBtn = document.getElementById('userBtn');
 
   if (userStr) {
     try {
-      const user = JSON.parse(userStr);
-      userBtn.textContent = '👤 ' + (user.name || user.email || 'User');
+      showUserWidget(JSON.parse(userStr));
     } catch(e) {
-      userBtn.textContent = '👤 User';
+      showUserWidget(null);
     }
     signInBtn.style.display = 'none';
-    userWidget.style.display = 'flex';
   } else {
     signInBtn.style.display = 'block';
     userWidget.style.display = 'none';
   }
 });
+
+function showUserWidget(user) {
+  const signInBtn = document.getElementById('signInBtn');
+  const userWidget = document.getElementById('userWidget');
+  const userBtn = document.getElementById('userBtn');
+  const name = user ? (user.name || user.email || 'User') : 'User';
+  userBtn.textContent = name;
+  signInBtn.style.display = 'none';
+  userWidget.style.display = 'flex';
+}
 </script>
 </body>
 </html>
