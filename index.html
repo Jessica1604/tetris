@@ -581,11 +581,12 @@ function startGame() {
   sessionSeconds = 0;
   clearInterval(playTimer);
   playTimer = setInterval(() => {
+    if (paused || gameOver) return; // 暂停或结束时不计时
     sessionSeconds++;
     playTimeSeconds++;
     localStorage.setItem('totalPlayTime', playTimeSeconds);
     
-    // 检查是否需要支付（5分钟且未购买）
+    // 检查是否需要支付（到达免费时长且未购买）
     if (sessionSeconds >= FREE_PLAY_SECONDS && localStorage.getItem('gamePaid') !== 'true') {
       pausedForPayment = true;
       clearInterval(gameLoop);
