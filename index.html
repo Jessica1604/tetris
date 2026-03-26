@@ -8,12 +8,70 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: #1a1a2e;
+    font-family: 'Courier New', monospace;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    background: #0f0f1a;
+    border-bottom: 2px solid #0f3460;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo { font-size: 18px; font-weight: bold; color: #e94560; }
+  .user-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+  .user-menu:hover { background: #1a1a2e; }
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .user-name { font-size: 14px; }
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: #0f0f1a;
+    border: 2px solid #0f3460;
+    border-radius: 4px;
+    min-width: 160px;
+    display: none;
+    z-index: 1000;
+  }
+  .dropdown.show { display: block; }
+  .dropdown-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 13px;
+  }
+  .dropdown-item:hover { background: #1a1a2e; }
+  .dropdown-item:first-child { border-radius: 2px 2px 0 0; }
+  .dropdown-item:last-child { border-radius: 0 0 2px 2px; }
+  .game-wrapper {
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    font-family: 'Courier New', monospace;
-    color: #eee;
   }
   .game-container {
     display: flex;
@@ -108,19 +166,23 @@
 </style>
 </head>
 <body>
-<!-- 导航栏 -->
-<div style="position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; gap: 10px;">
-  <!-- 未登录：直接跳转 Google OAuth -->
-  <a id="signInBtn" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile" style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: none;">Sign in with Google</a>
-  <!-- 已登录：显示用户名，点击弹出下拉菜单 -->
-  <div id="userWidget" style="display: none; position: relative;">
-    <button id="userBtn" onclick="toggleUserMenu(event)" style="background: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 14px;"></button>
-    <div id="userMenu" style="position: absolute; top: 45px; right: 0; background: #1a1a2e; border: 1px solid #444; border-radius: 6px; display: none; min-width: 160px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-      <a href="/user-center.html" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333;">👤 个人中心</a>
-      <a href="#" onclick="logout(event)" style="display: block; padding: 10px 15px; color: #fff; text-decoration: none;">🚪 退出登录</a>
+<!-- 顶部导航栏 -->
+<div class="header">
+  <div class="logo">TETRIS</div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <a id="signInBtn" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=967843277540-d9ptp66h38njk4l0sj8krgh29pc5ejbr.apps.googleusercontent.com&redirect_uri=https://tetris.solutions/&response_type=code&scope=email%20profile" style="background: #4285f4; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: none; font-size: 13px;">Sign in with Google</a>
+    <div class="user-menu" id="userWidget" onclick="toggleUserMenu(event)" style="display: none;">
+      <div class="user-avatar">👾</div>
+      <span class="user-name" id="userBtn">游客</span>
+      <span>▼</span>
+      <div class="dropdown" id="userMenu">
+        <div class="dropdown-item" onclick="window.location.href='tetris-user-center.html'">👤 个人中心</div>
+        <div class="dropdown-item" onclick="logout(event)">🚪 退出登录</div>
+      </div>
     </div>
   </div>
 </div>
+<div class="game-wrapper">
 <div class="game-container">
   <!-- Left Panel -->
   <div class="left-panel">
@@ -165,6 +227,7 @@
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <script>
@@ -426,34 +489,35 @@ nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
 
 // 用户菜单
 function toggleUserMenu(e) {
-  e.preventDefault();
+  e.stopPropagation();
   const menu = document.getElementById('userMenu');
-  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  menu.classList.toggle('show');
 }
 
 // 点击其他地方关闭菜单
 document.addEventListener('click', (e) => {
   const widget = document.getElementById('userWidget');
   if (widget && !widget.contains(e.target)) {
-    document.getElementById('userMenu').style.display = 'none';
+    document.getElementById('userMenu').classList.remove('show');
   }
 });
 
 function logout(e) {
   e.preventDefault();
+  e.stopPropagation();
   localStorage.removeItem('user');
+  localStorage.removeItem('userInfo');
   location.reload();
 }
 
-// 检查登录状态
+// 检查登录状态（兼容 'user' 和 'userInfo' 两种存储 key）
 window.addEventListener('load', () => {
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem('user') || localStorage.getItem('userInfo');
   const signInBtn = document.getElementById('signInBtn');
   const userWidget = document.getElementById('userWidget');
   const userBtn = document.getElementById('userBtn');
 
   if (userStr) {
-    // 已登录：显示用户名和下拉菜单
     try {
       const user = JSON.parse(userStr);
       userBtn.textContent = '👤 ' + (user.name || user.email || 'User');
@@ -461,9 +525,8 @@ window.addEventListener('load', () => {
       userBtn.textContent = '👤 User';
     }
     signInBtn.style.display = 'none';
-    userWidget.style.display = 'block';
+    userWidget.style.display = 'flex';
   } else {
-    // 未登录：显示 Sign in 按钮
     signInBtn.style.display = 'block';
     userWidget.style.display = 'none';
   }
