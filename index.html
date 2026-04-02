@@ -257,7 +257,7 @@
     position: relative;
   }
 </style>
-<script src="https://www.sandbox.paypal.com/sdk/js?client-id=AeL7MGKo_rFONJdei7JhLNs7gJ_l2rP2PNdXuVaNU4umb_xDLHPLbW_ok0dc6DYkoNOAgKDHpQ8bL2yo&currency=USD&intent=capture"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AQr7e-Dl5m1GFvh2_MQ3MTemlKXLiu4fSz2dSoc8nXN3GBMRy1Nv0WiX4HC6WrT5_UBnHAd2-3OXD6g_&currency=USD&intent=capture"></script>
 </head>
 <body>
 <!-- 顶部导航栏 -->
@@ -587,7 +587,8 @@ function startGame() {
     localStorage.setItem('totalPlayTime', playTimeSeconds);
     
     // 检查是否需要支付（到达免费时长且未购买）
-    if (sessionSeconds >= FREE_PLAY_SECONDS && localStorage.getItem('gamePaid') !== 'true') {
+    const isPaid = localStorage.getItem('gamePaid') === 'true';
+    if (sessionSeconds >= FREE_PLAY_SECONDS && !isPaid) {
       pausedForPayment = true;
       clearInterval(gameLoop);
       clearInterval(playTimer);
@@ -698,12 +699,21 @@ function closeProfile() {
 }
 
 function closePayment() {
+  // 如果是因为试玩时间到而弹出的支付框，关闭后不允许继续游戏
+  if (pausedForPayment && localStorage.getItem('gamePaid') !== 'true') {
+    // 保持游戏暂停状态，不恢复游戏
+    return;
+  }
   document.getElementById('paymentModal').classList.remove('show');
 }
 
 function onPaymentSuccess() {
   localStorage.setItem('gamePaid', 'true');
   document.getElementById('paymentModal').classList.remove('show');
+  
+  // 更新个人中心的支付状态显示
+  document.getElementById('profilePaid').textContent = '✅ 已购买完整版';
+  
   if (pausedForPayment) {
     pausedForPayment = false;
     overlay.style.display = 'none';
@@ -713,6 +723,7 @@ function onPaymentSuccess() {
     sessionSeconds = 0;
     clearInterval(playTimer);
     playTimer = setInterval(() => {
+      if (paused || gameOver) return;
       sessionSeconds++;
       playTimeSeconds++;
       localStorage.setItem('totalPlayTime', playTimeSeconds);
