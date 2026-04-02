@@ -581,10 +581,11 @@ function startGame() {
   sessionSeconds = 0;
   clearInterval(playTimer);
   playTimer = setInterval(() => {
-    if (paused || gameOver) return; // 暂停或结束时不计时
+    if (paused || gameOver || pausedForPayment) return;
     sessionSeconds++;
     playTimeSeconds++;
     localStorage.setItem('totalPlayTime', playTimeSeconds);
+    console.log('[Tetris] 已玩秒数:', sessionSeconds, '/ 免费时长:', FREE_PLAY_SECONDS);
     
     // 检查是否需要支付（到达免费时长且未购买）
     const isPaid = localStorage.getItem('gamePaid') === 'true';
@@ -592,9 +593,11 @@ function startGame() {
       pausedForPayment = true;
       clearInterval(gameLoop);
       clearInterval(playTimer);
+      paused = true;
       overlay.style.display = 'flex';
       overlay.innerHTML = '<div>试玩时间已到</div><div class="sub">请购买完整版继续游戏</div>';
       document.getElementById('paymentModal').classList.add('show');
+      paypalRendered = false; // 允许重新渲染
       renderPayPalButton();
     }
   }, 1000);
@@ -716,6 +719,7 @@ function onPaymentSuccess() {
   
   if (pausedForPayment) {
     pausedForPayment = false;
+    paused = false;
     overlay.style.display = 'none';
     clearInterval(gameLoop);
     gameLoop = setInterval(() => { tick(); }, getSpeed());
@@ -723,7 +727,7 @@ function onPaymentSuccess() {
     sessionSeconds = 0;
     clearInterval(playTimer);
     playTimer = setInterval(() => {
-      if (paused || gameOver) return;
+      if (paused || gameOver || pausedForPayment) return;
       sessionSeconds++;
       playTimeSeconds++;
       localStorage.setItem('totalPlayTime', playTimeSeconds);
@@ -807,7 +811,7 @@ function formatPlayTime(seconds) {
 }
 
 // 支付相关变量
-const FREE_PLAY_SECONDS = 2 * 60; // 免费试玩2分钟
+const FREE_PLAY_SECONDS = 30; // 免费试玩30秒（测试用）
 let playTimeSeconds = parseInt(localStorage.getItem('totalPlayTime') || '0');
 let sessionSeconds = 0;
 let playTimer = null;
