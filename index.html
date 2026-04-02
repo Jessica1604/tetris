@@ -293,6 +293,7 @@
       <div class="value" id="linesVal">0</div>
     </div>
     <button id="startBtn">START</button>
+    <button id="resetBtn" onclick="resetPayment()" style="background:#333;color:#aaa;border:1px solid #555;padding:6px 0;width:100%;font-family:'Courier New',monospace;font-size:11px;cursor:pointer;border-radius:4px;margin-top:4px;">RESET TEST</button>
   </div>
 
   <!-- Game Canvas -->
@@ -568,6 +569,7 @@ function getSpeed() {
 function startGame() {
   board = createBoard();
   score = 0; level = 1; lines = 0; paused = false; gameOver = false; started = true;
+  pausedForPayment = false;
   piece = randomPiece();
   nextPiece = randomPiece();
   updateUI();
@@ -581,7 +583,7 @@ function startGame() {
   sessionSeconds = 0;
   clearInterval(playTimer);
   playTimer = setInterval(() => {
-    if (paused || gameOver || pausedForPayment) return;
+    if (gameOver || pausedForPayment) return;
     sessionSeconds++;
     playTimeSeconds++;
     localStorage.setItem('totalPlayTime', playTimeSeconds);
@@ -590,14 +592,15 @@ function startGame() {
     // 检查是否需要支付（到达免费时长且未购买）
     const isPaid = localStorage.getItem('gamePaid') === 'true';
     if (sessionSeconds >= FREE_PLAY_SECONDS && !isPaid) {
+      console.log('[Tetris] 触发支付弹窗！');
       pausedForPayment = true;
+      paused = true;
       clearInterval(gameLoop);
       clearInterval(playTimer);
-      paused = true;
       overlay.style.display = 'flex';
       overlay.innerHTML = '<div>试玩时间已到</div><div class="sub">请购买完整版继续游戏</div>';
       document.getElementById('paymentModal').classList.add('show');
-      paypalRendered = false; // 允许重新渲染
+      paypalRendered = false;
       renderPayPalButton();
     }
   }, 1000);
@@ -816,6 +819,17 @@ let playTimeSeconds = parseInt(localStorage.getItem('totalPlayTime') || '0');
 let sessionSeconds = 0;
 let playTimer = null;
 let pausedForPayment = false;
+
+// 调试：在控制台输出当前支付状态
+console.log('[Tetris] 当前支付状态 gamePaid:', localStorage.getItem('gamePaid'));
+console.log('[Tetris] 如需重置支付状态，在控制台执行: localStorage.removeItem("gamePaid"); location.reload()');
+
+function resetPayment() {
+  if (confirm('重置支付状态？（仅用于测试）')) {
+    localStorage.removeItem('gamePaid');
+    location.reload();
+  }
+}
 
 // 点击弹窗外部关闭
 document.addEventListener('click', (e) => {
